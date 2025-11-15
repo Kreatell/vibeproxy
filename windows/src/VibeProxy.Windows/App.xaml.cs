@@ -4,10 +4,11 @@ using System.Threading.Tasks;
 using System.Windows;
 using VibeProxy.Windows.Services;
 using VibeProxy.Windows.ViewModels;
+using WpfApplication = System.Windows.Application;
 
 namespace VibeProxy.Windows;
 
-public partial class App : Application
+public partial class App : WpfApplication
 {
     private TrayIconService? _trayIcon;
     private CliProxyService? _cliProxy;

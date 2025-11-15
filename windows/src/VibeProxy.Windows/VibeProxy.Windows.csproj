@@ -12,10 +12,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CommunityToolkit.WinUI.Notifications" Version="7.1.2" />
-  </ItemGroup>
-
-  <ItemGroup>
     <Resource Include="Resources\**\*.*" Exclude="Resources\cli-proxy-api.exe" />
     <Content Include="Resources\config.yaml">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
