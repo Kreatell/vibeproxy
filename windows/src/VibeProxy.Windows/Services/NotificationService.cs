@@ -17,6 +17,9 @@ public sealed class NotificationService : IDisposable
             Icon = System.Drawing.SystemIcons.Information
         };
 
+        _notifyIcon.BalloonTipClosed += (_, _) => _notifyIcon.Visible = false;
+        _notifyIcon.BalloonTipClicked += (_, _) => _notifyIcon.Visible = false;
+
         EnsureShortcut();
     }
 
@@ -74,6 +77,7 @@ public sealed class NotificationService : IDisposable
 
     public void Dispose()
     {
+        _notifyIcon.Visible = false;
         _notifyIcon.Dispose();
     }
 }
