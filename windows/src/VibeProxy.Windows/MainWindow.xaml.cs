@@ -1,5 +1,6 @@
 using System.Threading.Tasks;
 using System.Windows;
+using ButtonControl = System.Windows.Controls.Button;
 using CheckBoxControl = System.Windows.Controls.CheckBox;
 using VibeProxy.Windows.Models;
 using VibeProxy.Windows.ViewModels;
@@ -40,21 +41,53 @@ public partial class MainWindow : Window
         ViewModel.OpenAuthFolder();
     }
 
-    private async void OnConnectClaude(object sender, RoutedEventArgs e) => await ViewModel.ConnectClaudeAsync();
-    private async void OnDisconnectClaude(object sender, RoutedEventArgs e) => await ViewModel.DisconnectClaudeAsync();
-    private async void OnConnectCodex(object sender, RoutedEventArgs e) => await ViewModel.ConnectCodexAsync();
-    private async void OnDisconnectCodex(object sender, RoutedEventArgs e) => await ViewModel.DisconnectCodexAsync();
-    private async void OnConnectGemini(object sender, RoutedEventArgs e) => await ViewModel.ConnectGeminiAsync();
-    private async void OnDisconnectGemini(object sender, RoutedEventArgs e) => await ViewModel.DisconnectGeminiAsync();
-
-    private async void OnConnectQwen(object sender, RoutedEventArgs e)
+    private void OnCopyServerUrl(object sender, RoutedEventArgs e)
     {
-        var dialog = new QwenEmailDialog { Owner = this };
-        if (dialog.ShowDialog() == true)
+        ViewModel.CopyServerUrlToClipboard();
+    }
+
+    private async void OnConnectService(object sender, RoutedEventArgs e)
+    {
+        if (sender is not ButtonControl { Tag: AuthProviderType provider })
         {
-            await ViewModel.ConnectQwenAsync(dialog.Email);
+            return;
+        }
+
+        if (provider == AuthProviderType.Qwen)
+        {
+            var dialog = new QwenEmailDialog { Owner = this };
+            if (dialog.ShowDialog() == true)
+            {
+                await ViewModel.ConnectQwenAsync(dialog.Email);
+            }
+            return;
+        }
+
+        await ConnectServiceAsync(provider);
+    }
+
+    private async void OnDisconnectService(object sender, RoutedEventArgs e)
+    {
+        if (sender is ButtonControl { Tag: AuthProviderType provider })
+        {
+            await DisconnectServiceAsync(provider);
         }
     }
 
-    private async void OnDisconnectQwen(object sender, RoutedEventArgs e) => await ViewModel.DisconnectQwenAsync();
+    private Task ConnectServiceAsync(AuthProviderType provider) => provider switch
+    {
+        AuthProviderType.Claude => ViewModel.ConnectClaudeAsync(),
+        AuthProviderType.Codex => ViewModel.ConnectCodexAsync(),
+        AuthProviderType.Gemini => ViewModel.ConnectGeminiAsync(),
+        _ => Task.CompletedTask
+    };
+
+    private Task DisconnectServiceAsync(AuthProviderType provider) => provider switch
+    {
+        AuthProviderType.Claude => ViewModel.DisconnectClaudeAsync(),
+        AuthProviderType.Codex => ViewModel.DisconnectCodexAsync(),
+        AuthProviderType.Gemini => ViewModel.DisconnectGeminiAsync(),
+        AuthProviderType.Qwen => ViewModel.DisconnectQwenAsync(),
+        _ => Task.CompletedTask
+    };
 }

@@ -24,6 +24,7 @@ public sealed class SettingsViewModel : ObservableObject
     private readonly LaunchAtLoginService _launchAtLoginService;
     private readonly NotificationService _notificationService;
     private readonly Dictionary<AuthProviderType, bool> _authBusy = new();
+    private readonly Dictionary<AuthProviderType, ServiceCardViewModel> _serviceCards;
 
     private bool _launchAtLoginEnabled;
     private bool _thinkingProxyRunning;
@@ -43,12 +44,21 @@ public sealed class SettingsViewModel : ObservableObject
         _notificationService = notificationService;
 
         LogLines = new ObservableCollection<string>(_cliProxyService.GetLogs());
+        ServiceCards = new ObservableCollection<ServiceCardViewModel>(new[]
+        {
+            new ServiceCardViewModel(AuthProviderType.Claude, "Claude Code", Icon("icon-claude.png")),
+            new ServiceCardViewModel(AuthProviderType.Codex, "Codex", Icon("icon-codex.png")),
+            new ServiceCardViewModel(AuthProviderType.Gemini, "Gemini", Icon("icon-gemini.png")),
+            new ServiceCardViewModel(AuthProviderType.Qwen, "Qwen", Icon("icon-qwen.png"))
+        });
+        _serviceCards = ServiceCards.ToDictionary(card => card.Provider);
 
         _cliProxyService.StatusChanged += (_, _) =>
         {
             WinApplication.Current?.Dispatcher.Invoke(() =>
             {
                 RaisePropertyChanged(nameof(IsServerRunning));
+                RaisePropertyChanged(nameof(ServerStateLabel));
                 UpdateServerStatusText();
             });
         };
@@ -81,6 +91,7 @@ public sealed class SettingsViewModel : ObservableObject
     }
 
     public ObservableCollection<string> LogLines { get; }
+    public ObservableCollection<ServiceCardViewModel> ServiceCards { get; }
 
     public bool IsServerRunning => _cliProxyService.IsRunning;
 
@@ -97,6 +108,8 @@ public sealed class SettingsViewModel : ObservableObject
         get => _serverStatusText;
         private set => SetProperty(ref _serverStatusText, value);
     }
+
+    public string ServerStateLabel => IsServerRunning ? "Running" : "Stopped";
 
     public string VersionText => $"VibeProxy {Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.0"}";
 
@@ -119,6 +132,7 @@ public sealed class SettingsViewModel : ObservableObject
             _notificationService.Show("Server Started", "VibeProxy is now running on http://localhost:8317");
         }
         UpdateServerStatusText();
+        RaisePropertyChanged(nameof(ServerStateLabel));
     }
 
     public async Task StopServerAsync()
@@ -126,6 +140,7 @@ public sealed class SettingsViewModel : ObservableObject
         await _cliProxyService.StopAsync();
         await _thinkingProxyServer.StopAsync();
         UpdateServerStatusText();
+        RaisePropertyChanged(nameof(ServerStateLabel));
     }
 
     public void CopyServerUrlToClipboard()
@@ -304,24 +319,28 @@ public sealed class SettingsViewModel : ObservableObject
         {
             ClaudeStatus = claude;
             RaisePropertyChanged(nameof(ClaudeStatus));
+            UpdateCard(AuthProviderType.Claude, claude);
         }
 
         if (snapshot.TryGetValue(AuthProviderType.Codex, out var codex))
         {
             CodexStatus = codex;
             RaisePropertyChanged(nameof(CodexStatus));
+            UpdateCard(AuthProviderType.Codex, codex);
         }
 
         if (snapshot.TryGetValue(AuthProviderType.Gemini, out var gemini))
         {
             GeminiStatus = gemini;
             RaisePropertyChanged(nameof(GeminiStatus));
+            UpdateCard(AuthProviderType.Gemini, gemini);
         }
 
         if (snapshot.TryGetValue(AuthProviderType.Qwen, out var qwen))
         {
             QwenStatus = qwen;
             RaisePropertyChanged(nameof(QwenStatus));
+            UpdateCard(AuthProviderType.Qwen, qwen);
         }
     }
 
@@ -335,10 +354,15 @@ public sealed class SettingsViewModel : ObservableObject
             if (dispatcher.CheckAccess())
             {
                 ServerStatusText = status;
+                RaisePropertyChanged(nameof(ServerStateLabel));
             }
             else
             {
-                dispatcher.Invoke(() => ServerStatusText = status);
+                dispatcher.Invoke(() =>
+                {
+                    ServerStatusText = status;
+                    RaisePropertyChanged(nameof(ServerStateLabel));
+                });
             }
         }
     }
@@ -356,6 +380,10 @@ public sealed class SettingsViewModel : ObservableObject
         lock (_authBusy)
         {
             _authBusy[provider] = busy;
+        }
+        if (_serviceCards.TryGetValue(provider, out var card))
+        {
+            card.IsBusy = busy;
         }
         var dispatcher = WinApplication.Current?.Dispatcher;
         if (dispatcher is null)
@@ -392,6 +420,16 @@ public sealed class SettingsViewModel : ObservableObject
         }
     }
 
+    private void UpdateCard(AuthProviderType provider, AuthStatus status)
+    {
+        if (_serviceCards.TryGetValue(provider, out var card))
+        {
+            card.Status = status;
+        }
+    }
+
+    private static string Icon(string file) => $"pack://application:,,,/Resources/{file}";
+
     public async Task UpdateLaunchAtLoginAsync(bool enabled)
     {
         await _launchAtLoginService.SetEnabledAsync(enabled).ConfigureAwait(false);
@@ -416,5 +454,51 @@ public sealed class SettingsViewModel : ObservableObject
         {
             dispatcher.Invoke(() => LaunchAtLoginEnabled = value);
         }
+    }
+}
+
+public sealed class ServiceCardViewModel : ObservableObject
+{
+    private AuthStatus _status;
+    private bool _isBusy;
+
+    public ServiceCardViewModel(AuthProviderType provider, string name, string iconPath)
+    {
+        Provider = provider;
+        Name = name;
+        IconPath = iconPath;
+        _status = new AuthStatus(provider);
+    }
+
+    public AuthProviderType Provider { get; }
+
+    public string Name { get; }
+
+    public string IconPath { get; }
+
+    public AuthStatus Status
+    {
+        get => _status;
+        set
+        {
+            if (SetProperty(ref _status, value))
+            {
+                RaisePropertyChanged(nameof(StatusText));
+                RaisePropertyChanged(nameof(IsConnected));
+                RaisePropertyChanged(nameof(StatusChipText));
+            }
+        }
+    }
+
+    public string StatusText => Status.DisplayText;
+
+    public bool IsConnected => Status.IsAuthenticated;
+
+    public string StatusChipText => IsConnected ? "Connected" : "Offline";
+
+    public bool IsBusy
+    {
+        get => _isBusy;
+        set => SetProperty(ref _isBusy, value);
     }
 }

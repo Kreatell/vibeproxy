@@ -114,6 +114,7 @@ public partial class App : WpfApplication
         _thinkingProxy?.Dispose();
         _cliProxy?.Dispose();
         _authStatusService?.Dispose();
+        _notificationService?.Dispose();
 
         Shutdown();
     }
