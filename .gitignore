@@ -31,3 +31,8 @@ src/Sources/Resources/AppIcon.iconset/
 *.log
 test-notarization.sh
 .vscode/settings.json
+
+# Linux/.NET Build Artifacts
+linux/**/bin/
+linux/**/obj/
+linux/out/
