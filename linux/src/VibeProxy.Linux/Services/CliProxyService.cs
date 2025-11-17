@@ -253,6 +253,16 @@ public sealed class CliProxyService : IDisposable
         return new AuthCommandResult(success, message);
     }
 
+    public async Task KillExistingProcessesAsync()
+    {
+        await StopAsync().ConfigureAwait(false);
+
+        lock (_syncRoot)
+        {
+            KillCliProcesses(includeCurrent: true);
+        }
+    }
+
     private void EnsureConfig()
     {
         if (!File.Exists(_configPath))
@@ -324,17 +334,31 @@ public sealed class CliProxyService : IDisposable
 
     private void KillOrphanedProcesses()
     {
+        KillCliProcesses(includeCurrent: false);
+    }
+
+    private void KillCliProcesses(bool includeCurrent)
+    {
         try
         {
             foreach (var process in Process.GetProcessesByName("cli-proxy-api"))
             {
-                if (process.Id == _process?.Id)
+                if (!includeCurrent && _process is not null && process.Id == _process.Id)
                 {
                     continue;
                 }
 
-                process.Kill(true);
-                process.Dispose();
+                try
+                {
+                    process.Kill(true);
+                }
+                catch
+                {
+                }
+                finally
+                {
+                    process.Dispose();
+                }
             }
         }
         catch

@@ -7,6 +7,8 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
 using VibeProxy.Linux.Models;
 using VibeProxy.Linux.Services;
 using VibeProxy.Linux.Utilities;
@@ -145,13 +147,29 @@ public sealed class SettingsViewModel : ObservableObject, IDisposable
 
     public async Task StartServerAsync()
     {
-        await _thinkingProxyServer.StartAsync().ConfigureAwait(false);
-        var started = await _cliProxyService.StartAsync().ConfigureAwait(false);
-        if (started)
+        try
         {
-            _notificationService.Show("Server Started", "VibeProxy is now running on http://localhost:8317");
+            await _cliProxyService.KillExistingProcessesAsync().ConfigureAwait(false);
+            await _thinkingProxyServer.StartAsync().ConfigureAwait(false);
+            var started = await _cliProxyService.StartAsync().ConfigureAwait(false);
+            if (started)
+            {
+                _notificationService.Show("Server Started", "VibeProxy is now running on http://localhost:8317");
+            }
+            else
+            {
+                _notificationService.Show("Start Failed", "Unable to start the backend process. Check logs for details.");
+            }
         }
-        UpdateServerStatusText();
+        catch (Exception ex)
+        {
+            Console.Error.WriteLine(ex);
+            _notificationService.Show("Start Failed", $"Could not start the server: {ex.Message}");
+        }
+        finally
+        {
+            UpdateServerStatusText();
+        }
     }
 
     public async Task StopServerAsync()
@@ -166,9 +184,14 @@ public sealed class SettingsViewModel : ObservableObject, IDisposable
         var url = "http://localhost:8317";
         try
         {
-            if (Application.Current?.Clipboard is not null)
+            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop &&
+                desktop.MainWindow is not null)
             {
-                await Application.Current.Clipboard.SetTextAsync(url);
+                var clipboard = TopLevel.GetTopLevel(desktop.MainWindow)?.Clipboard;
+                if (clipboard is not null)
+                {
+                    await clipboard.SetTextAsync(url);
+                }
             }
         }
         catch

@@ -1,6 +1,6 @@
 namespace VibeProxy.Linux.Services;
 
-internal enum AuthCommand
+public enum AuthCommand
 {
     Claude,
     Codex,
@@ -8,4 +8,4 @@ internal enum AuthCommand
     Qwen
 }
 
-internal readonly record struct AuthCommandResult(bool Success, string Message);
+public readonly record struct AuthCommandResult(bool Success, string Message);

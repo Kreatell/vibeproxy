@@ -19,7 +19,18 @@ public sealed class AsyncCommand : ICommand
 
     public bool CanExecute(object? parameter) => _canExecute?.Invoke() ?? true;
 
-    public async void Execute(object? parameter) => await _execute().ConfigureAwait(false);
+    public async void Execute(object? parameter)
+    {
+        try
+        {
+            await _execute().ConfigureAwait(false);
+        }
+        catch (Exception ex)
+        {
+            // Avoid crashing the UI on unhandled async exceptions.
+            Console.Error.WriteLine(ex);
+        }
+    }
 
     public void RaiseCanExecuteChanged() => CanExecuteChanged?.Invoke(this, EventArgs.Empty);
 }

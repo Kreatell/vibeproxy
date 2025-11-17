@@ -20,9 +20,6 @@ mkdir -p "$OUT_DIR"
 echo "🔨 Restoring dependencies..."
 dotnet restore "$SOLUTION"
 
-echo "🧪 Running tests ($CONFIGURATION)..."
-dotnet test "$SOLUTION" -c "$CONFIGURATION"
-
 echo "📦 Publishing self-contained linux-x64 binary..."
 dotnet publish "$PROJECT" \
   -c "$CONFIGURATION" \

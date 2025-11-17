@@ -56,15 +56,20 @@ public sealed class TrayService
         _trayIcon.Icon = viewModel.IsServerRunning ? _activeIcon : _inactiveIcon;
     }
 
+    private static void ShowWindow(Window window)
+    {
+        window.Show();
+        window.Activate();
+        if (window.WindowState == WindowState.Minimized)
+        {
+            window.WindowState = WindowState.Normal;
+        }
+    }
+
     private static WindowIcon LoadIcon(string uri)
     {
-        var assets = AvaloniaLocator.Current.GetService<IAssetLoader>();
-        if (assets is not null && assets.Exists(new Uri(uri)))
-        {
-            using var stream = assets.Open(new Uri(uri));
-            return new WindowIcon(new Bitmap(stream));
-        }
-
-        return new WindowIcon();
+        var assets = AssetLoader.Open(new Uri(uri));
+        using var stream = assets;
+        return new WindowIcon(new Bitmap(stream));
     }
 }

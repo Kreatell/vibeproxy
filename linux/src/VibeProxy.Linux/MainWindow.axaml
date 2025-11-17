@@ -37,7 +37,7 @@
 
       <StackPanel Grid.Column="1" Margin="12" Spacing="8">
         <TextBlock Text="Status" FontWeight="SemiBold" />
-        <ItemsControl Items="{Binding StatusItems}">
+        <ItemsControl ItemsSource="{Binding StatusItems}">
           <ItemsControl.ItemTemplate>
             <DataTemplate>
               <StackPanel Orientation="Horizontal" Spacing="6">
@@ -53,7 +53,7 @@
         <TextBlock Text="Logs" FontWeight="SemiBold" />
         <Border Height="220" BorderBrush="Gray" BorderThickness="1">
           <ScrollViewer>
-            <ItemsControl Items="{Binding LogLines}" />
+            <ItemsControl ItemsSource="{Binding LogLines}" />
           </ScrollViewer>
         </Border>
       </StackPanel>
