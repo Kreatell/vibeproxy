@@ -2,6 +2,7 @@
 
 PWSH ?= pwsh
 WINDOWS_BUILD_SCRIPT := scripts/build-windows.ps1
+LINUX_BUILD_SCRIPT := scripts/build-linux.sh
 
 ifeq ($(OS),Windows_NT)
 PWSH_CHECK = @where $(PWSH) >nul 2>&1 || (echo ❌ PowerShell '$(PWSH)' not found. Install pwsh to continue. && exit /b 1)
@@ -91,6 +92,12 @@ windows-build: ## Build Windows artifacts in Debug configuration via PowerShell 
 windows-release: ## Build Windows artifacts in Release configuration via PowerShell script
 	$(PWSH_CHECK)
 	@$(PWSH) -NoProfile -ExecutionPolicy Bypass -File $(WINDOWS_BUILD_SCRIPT) -Configuration Release
+
+linux-build: ## Build Linux artifacts in Debug configuration
+	@bash "$(LINUX_BUILD_SCRIPT)" Debug
+
+linux-release: ## Build Linux artifacts in Release configuration
+	@bash "$(LINUX_BUILD_SCRIPT)" Release
 
 # Shortcuts
 all: app ## Same as 'app'
